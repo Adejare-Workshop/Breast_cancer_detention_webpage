@@ -1,11 +1,11 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from inference import DiseasePredictor
+from inference import HeartDiseasePredictor  # <--- UPDATED IMPORT
 import json
+import os
 
-app = FastAPI(title="Multimodal Disease Prediction API")
+app = FastAPI(title="Multimodal Heart Disease Prediction API")
 
-# Allow CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,36 +13,36 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Model Service
 model_service = None
 
 @app.on_event("startup")
 def startup_event():
     global model_service
     try:
-        model_service = DiseasePredictor()
+        if not os.path.exists("results"):
+            os.makedirs("results")
+            
+        print("Initializing model service...")
+        # <--- UPDATED CLASS USAGE
+        model_service = HeartDiseasePredictor(model_dir="results") 
+        print("Model service ready!")
     except Exception as e:
-        print(f"Error loading models: {e}")
+        print(f"CRITICAL ERROR loading models: {e}")
+
+@app.get("/")
+def read_root():
+    return {"status": "healthy", "message": "Heart Disease Prediction API is running"}
 
 @app.post("/predict")
 async def predict(
     image: UploadFile = File(...),
-    # Accepting clinical data as a JSON string inside a form field for simplicity
     clinical_data: str = Form(...) 
 ):
-    """
-    API Contract:
-    - image: Ultrasound image file (PNG/JPG)
-    - clinical_data: JSON string of numeric features (e.g., '{"age": 45, "tumor_size": 2.5...}')
-    """
     if not model_service:
         raise HTTPException(status_code=503, detail="Model service not ready")
 
     try:
-        # Parse JSON data
         data_dict = json.loads(clinical_data)
-        
-        # Run Inference
         result = model_service.predict(image.file, data_dict)
         return result
         

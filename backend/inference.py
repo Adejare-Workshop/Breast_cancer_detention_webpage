@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import joblib
 import os
-import gdown  # <--- NEW IMPORT
+import gdown
 from PIL import Image
 from torchvision import transforms
 from medclip import MedCLIPModel
@@ -14,37 +14,35 @@ class DiseasePredictor:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Loading models on {self.device}...")
 
-        # --- NEW CODE START: Download Weights from Drive ---
-        # We define the local filename here.
+        # --- DOWNLOAD WEIGHTS FROM GOOGLE DRIVE IF MISSING ---
         weights_path = f"{model_dir}/model_weights.pth"
         
         if not os.path.exists(weights_path):
             print("Weights not found locally. Downloading from Google Drive...")
-            
-            # YOUR SPECIFIC FILE ID
+            # Your specific File ID
             file_id = '1k_3siDeRQd6cgqu1_LzTvh9BM2xpFB3T'
-            
-            # Correct Google Drive Direct Download URL format
             url = f'https://drive.google.com/uc?id={file_id}'
-            
-            # Download the file
             gdown.download(url, weights_path, quiet=False)
-        # --- NEW CODE END ---
 
-        # 1. Load Scalers
-        self.scaler_clinical = joblib.load(f"{model_dir}/scaler_clinical.joblib")
-        self.scaler_image = joblib.load(f"{model_dir}/scaler_image.joblib")
+        # 1. Load Scalers (CRITICAL: These must exist in your results folder)
+        try:
+            self.scaler_clinical = joblib.load(f"{model_dir}/scaler_clinical.joblib")
+            self.scaler_image = joblib.load(f"{model_dir}/scaler_image.joblib")
+        except FileNotFoundError:
+            raise RuntimeError("Scalers not found! Did you export them from the notebook?")
 
         # 2. Load MedCLIP (Image Encoder)
         self.medclip = MedCLIPModel()
-        # Load the weights we just downloaded (or found locally)
         self.medclip.load_state_dict(torch.load(weights_path, map_location=self.device))
         self.medclip.to(self.device)
         self.medclip.eval()
 
         # 3. Load TabNet (Classifier)
-        self.tabnet = joblib.load(f"{model_dir}/tabnet_combined_model.joblib")
-        
+        try:
+            self.tabnet = joblib.load(f"{model_dir}/tabnet_combined_model.joblib")
+        except FileNotFoundError:
+             raise RuntimeError("TabNet model not found! Check your results folder.")
+
         # 4. Define Image Transform
         self.transform = transforms.Compose([
             transforms.Resize((224, 224)),
@@ -63,7 +61,6 @@ class DiseasePredictor:
             embedding = self.medclip.encode_image(img_tensor)
             embedding_np = embedding.cpu().numpy()
             
-        # Scale embeddings using the saved scaler
         return self.scaler_image.transform(embedding_np)
 
     def preprocess_clinical(self, data_dict):
@@ -71,7 +68,7 @@ class DiseasePredictor:
         # Convert dict to DataFrame
         df = pd.DataFrame([data_dict])
         
-        # Scale features using the saved scaler
+        # Scale features
         return self.scaler_clinical.transform(df.values)
 
     def predict(self, image_file, clinical_data):

@@ -2,6 +2,8 @@ import torch
 import numpy as np
 import pandas as pd
 import joblib
+import os
+import gdown  # <--- NEW IMPORT
 from PIL import Image
 from torchvision import transforms
 from medclip import MedCLIPModel
@@ -12,20 +14,37 @@ class DiseasePredictor:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Loading models on {self.device}...")
 
-        # 1. Load Scalers (Crucial for correct inference)
+        # --- NEW CODE START: Download Weights from Drive ---
+        # We define the local filename here.
+        weights_path = f"{model_dir}/model_weights.pth"
+        
+        if not os.path.exists(weights_path):
+            print("Weights not found locally. Downloading from Google Drive...")
+            
+            # YOUR SPECIFIC FILE ID
+            file_id = '1k_3siDeRQd6cgqu1_LzTvh9BM2xpFB3T'
+            
+            # Correct Google Drive Direct Download URL format
+            url = f'https://drive.google.com/uc?id={file_id}'
+            
+            # Download the file
+            gdown.download(url, weights_path, quiet=False)
+        # --- NEW CODE END ---
+
+        # 1. Load Scalers
         self.scaler_clinical = joblib.load(f"{model_dir}/scaler_clinical.joblib")
         self.scaler_image = joblib.load(f"{model_dir}/scaler_image.joblib")
 
         # 2. Load MedCLIP (Image Encoder)
         self.medclip = MedCLIPModel()
-        # Loading weights as defined in the notebook logic
-        self.medclip.load_state_dict(torch.load(f"{model_dir}/Medclip_model_weights.pth", map_location=self.device))
+        # Load the weights we just downloaded (or found locally)
+        self.medclip.load_state_dict(torch.load(weights_path, map_location=self.device))
         self.medclip.to(self.device)
         self.medclip.eval()
 
         # 3. Load TabNet (Classifier)
         self.tabnet = joblib.load(f"{model_dir}/tabnet_combined_model.joblib")
-
+        
         # 4. Define Image Transform
         self.transform = transforms.Compose([
             transforms.Resize((224, 224)),
@@ -52,10 +71,7 @@ class DiseasePredictor:
         # Convert dict to DataFrame
         df = pd.DataFrame([data_dict])
         
-        # Ensure columns match training order (You must list all numeric features used in training here)
-        # Note: This implies the dict keys must match the CSV columns used in 'project jare.ipynb'
-        
-        # Scale features
+        # Scale features using the saved scaler
         return self.scaler_clinical.transform(df.values)
 
     def predict(self, image_file, clinical_data):

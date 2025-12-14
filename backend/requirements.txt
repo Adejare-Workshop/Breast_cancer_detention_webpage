@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+torch
+pandas
+numpy
+scikit-learn
+pytorch-tabnet
+medclip
+Pillow
+joblib
+gdown  

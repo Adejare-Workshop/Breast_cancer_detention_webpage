@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedCLIP + TabNet Diagnostic Tool</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --surface: #ffffff;
+            --background: #f3f4f6;
+            --text: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 { margin-top: 0; color: var(--primary); }
+        .subtitle { color: #6b7280; margin-bottom: 2rem; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .input-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        
+        input[type="number"], input[type="file"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .preview-area {
+            width: 100%;
+            height: 200px;
+            background: #f9fafb;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .preview-area img { max-width: 100%; max-height: 100%; }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: #1d4ed8; }
+        button:disabled { background-color: #9ca3af; }
+
+        #result {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .success { background-color: #ecfdf5; border: 1px solid #10b981; color: #065f46; }
+        .error { background-color: #fef2f2; border: 1px solid #ef4444; color: #991b1b; }
+        
+        .confidence-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.5s; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Diagnostic Analysis</h1>
+    <p class="subtitle">Multimodal Prediction (Ultrasound + Clinical Data)</p>
+
+    <form id="diagnosticForm">
+        <div class="form-grid">
+            <div>
+                <div class="input-group">
+                    <label>Ultrasound Image</label>
+                    <input type="file" id="imageInput" accept="image/png, image/jpeg" required>
+                    <div class="preview-area" id="imagePreview">
+                        <span style="color: #9ca3af">No image selected</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label>Clinical Parameters</label>
+                
+                <div class="input-group">
+                    <label for="age">Age</label>
+                    <input type="number" id="age" name="age" placeholder="e.g. 45" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="tumor_size">Tumor Size (cm)</label>
+                    <input type="number" id="tumor_size" name="tumor_size" step="0.1" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="parameter_3">Parameter 3</label>
+                    <input type="number" id="parameter_3" name="parameter_3" step="0.1" required>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" id="submitBtn">Generate Prediction</button>
+    </form>
+
+    <div id="result"></div>
+</div>
+
+<script>
+    // Image Preview Logic
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('imagePreview').innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Form Submission Logic
+    document.getElementById('diagnosticForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const btn = document.getElementById('submitBtn');
+        const resultDiv = document.getElementById('result');
+        
+        btn.disabled = true;
+        btn.innerText = "Analyzing...";
+        resultDiv.style.display = 'none';
+
+        try {
+            // 1. Gather Clinical Data into Object
+            const formData = new FormData(e.target);
+            const clinicalData = {};
+            
+            // Convert FormData to JSON object (ensure numbers are parsed)
+            // Note: You might need to map specific IDs to the specific column order expected by TabNet
+            clinicalData['age'] = parseFloat(document.getElementById('age').value);
+            clinicalData['tumor_size'] = parseFloat(document.getElementById('tumor_size').value);
+            clinicalData['parameter_3'] = parseFloat(document.getElementById('parameter_3').value);
+            
+            // 2. Prepare Payload
+            const payload = new FormData();
+            payload.append('image', document.getElementById('imageInput').files[0]);
+            payload.append('clinical_data', JSON.stringify(clinicalData));
+
+            // 3. Send Request
+            const response = await fetch('http://127.0.0.1:8000/predict', {
+                method: 'POST',
+                body: payload
+            });
+
+            if (!response.ok) throw new Error("Server error: " + response.statusText);
+
+            const data = await response.json();
+
+            // 4. Display Result
+            resultDiv.className = 'success';
+            resultDiv.innerHTML = `
+                <h3 style="margin:0">Prediction: ${data.prediction}</h3>
+                <p>Confidence: ${(data.confidence * 100).toFixed(1)}%</p>
+                <div class="confidence-bar">
+                    <div class="fill" style="width: ${data.confidence * 100}%"></div>
+                </div>
+                <small>Probabilities: Normal: ${(data.probabilities.Normal*100).toFixed(1)}% | 
+                       Benign: ${(data.probabilities.Benign*100).toFixed(1)}% | 
+                       Malignant: ${(data.probabilities.Malignant*100).toFixed(1)}%</small>
+            `;
+            resultDiv.style.display = 'block';
+
+        } catch (error) {
+            resultDiv.className = 'error';
+            resultDiv.innerText = "Error: " + error.message;
+            resultDiv.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Generate Prediction";
+        }
+    });
+</script>
+
+</body>
+</html>

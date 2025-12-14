@@ -9,7 +9,7 @@ from torchvision import transforms
 from medclip import MedCLIPModel
 from pytorch_tabnet.tab_model import TabNetClassifier
 
-class DiseasePredictor:
+class HeartDiseasePredictor:
     def __init__(self, model_dir="results"):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Loading models on {self.device}...")
@@ -24,7 +24,7 @@ class DiseasePredictor:
             url = f'https://drive.google.com/uc?id={file_id}'
             gdown.download(url, weights_path, quiet=False)
 
-        # 1. Load Scalers (CRITICAL: These must exist in your results folder)
+        # 1. Load Scalers
         try:
             self.scaler_clinical = joblib.load(f"{model_dir}/scaler_clinical.joblib")
             self.scaler_image = joblib.load(f"{model_dir}/scaler_image.joblib")

@@ -1,10 +1,39 @@
 // --- CONFIGURATION ---
-// Change this to your Render URL after deployment (e.g. 'https://my-app.onrender.com')
-// Keep as http://127.0.0.1:8000 for local testing
-const API_URL = 'https://adejareworkstudio-heart-disease-backend.hf.space';
+const API_URL = 'https://adejareworkstudio-heart-disease-backend.hf.space'; 
 // ---------------------
 
-// Image Preview Logic
+// Track current mode (default is combined)
+let currentMode = 'combined';
+
+// --- TAB SWITCHING LOGIC ---
+window.switchTab = function(mode) {
+    currentMode = mode;
+    
+    // 1. Update Buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active'); // Highlight clicked button
+
+    // 2. Show/Hide Sections
+    const imgSection = document.getElementById('section-image');
+    const clinSection = document.getElementById('section-clinical');
+
+    if (mode === 'combined') {
+        imgSection.style.display = 'block';
+        clinSection.style.display = 'block';
+    } else if (mode === 'clinical') {
+        imgSection.style.display = 'none';
+        clinSection.style.display = 'block';
+    } else if (mode === 'image') {
+        imgSection.style.display = 'block';
+        clinSection.style.display = 'none';
+    }
+    
+    // Clear results when switching
+    document.getElementById('result').style.display = 'none';
+}
+
+
+// --- PREVIEW LOGIC ---
 const imageInput = document.getElementById('imageInput');
 const imagePreview = document.getElementById('imagePreview');
 
@@ -21,7 +50,8 @@ if (imageInput) {
     });
 }
 
-// Form Submission Logic
+
+// --- SUBMISSION LOGIC ---
 const form = document.getElementById('diagnosticForm');
 
 if (form) {
@@ -36,17 +66,38 @@ if (form) {
         resultDiv.style.display = 'none';
 
         try {
-            // 1. Gather Clinical Data
-            const clinicalData = {};
-            // IMPORTANT: The keys here ('age', 'tumor_size') MUST match 
-            // the column order your scaler_clinical expects!
-            clinicalData['age'] = parseFloat(document.getElementById('age').value) || 0;
-            clinicalData['tumor_size'] = parseFloat(document.getElementById('tumor_size').value) || 0;
-            
-            // 2. Prepare Payload
             const payload = new FormData();
-            payload.append('image', document.getElementById('imageInput').files[0]);
-            payload.append('clinical_data', JSON.stringify(clinicalData));
+            
+            // LOGIC: Only send data relevant to the current tab
+            
+            // 1. Handle Image
+            if (currentMode === 'combined' || currentMode === 'image') {
+                const imgFile = document.getElementById('imageInput').files[0];
+                if (imgFile) {
+                    payload.append('image', imgFile);
+                } else {
+                    if (currentMode === 'image') throw new Error("Please select an image.");
+                }
+            }
+
+            // 2. Handle Clinical Data
+            if (currentMode === 'combined' || currentMode === 'clinical') {
+                const caseId = document.getElementById('case_id').value;
+                const pixSize = document.getElementById('pixel_size').value;
+                
+                // If mode is Clinical Only, require inputs. If Combined, they are optional.
+                if (currentMode === 'clinical' && (!caseId && !pixSize)) {
+                    throw new Error("Please enter clinical data.");
+                }
+
+                if (caseId || pixSize) {
+                    const clinicalData = {
+                        'CaseID': parseFloat(caseId) || 0,
+                        'Pixel_size': parseFloat(pixSize) || 0.007
+                    };
+                    payload.append('clinical_data', JSON.stringify(clinicalData));
+                }
+            }
 
             // 3. Send Request
             const response = await fetch(`${API_URL}/predict`, {

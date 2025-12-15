@@ -3,7 +3,7 @@
     --bg-dark: #020617;       /* Very dark navy */
     --bg-gradient: linear-gradient(135deg, #020617 0%, #1e1b4b 100%);
     
-    --surface: rgba(15, 23, 42, 0.7); /* Darker glass */
+    --surface: rgba(15, 23, 42, 0.75); /* Dark glass */
     
     --primary-blue: #38bdf8;  /* Electric Blue */
     --gold-accent: #fbbf24;   /* Amber Gold */
@@ -12,7 +12,7 @@
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
     
-    --border: rgba(251, 191, 36, 0.2); /* Subtle gold border */
+    --border: rgba(251, 191, 36, 0.3); /* Gold border */
 }
 
 body {
@@ -29,19 +29,19 @@ body {
     overflow-x: hidden;
 }
 
-/* BACKGROUND AMBIENCE */
+/* AMBIENT BACKGROUND LIGHT */
 body::before {
     content: '';
     position: fixed;
     top: -50%; left: -50%; width: 200%; height: 200%;
     background: radial-gradient(circle at center, rgba(56, 189, 248, 0.08) 0%, transparent 60%);
     z-index: -1;
-    animation: pulseLight 10s ease-in-out infinite alternate;
+    animation: pulseLight 8s ease-in-out infinite alternate;
 }
 
-@keyframes pulseLight { from { opacity: 0.5; } to { opacity: 1; } }
+@keyframes pulseLight { from { opacity: 0.6; } to { opacity: 1; } }
 
-/* THE CONTAINER (GOLD EDGE LIGHTING) */
+/* MAIN CONTAINER WITH GOLD EDGE BORDERS */
 .container {
     background: var(--surface);
     backdrop-filter: blur(20px);
@@ -51,49 +51,36 @@ body::before {
     width: 100%;
     max-width: 900px;
     
-    /* GOLD EDGE LIGHTING EFFECT */
-    border: 1px solid rgba(251, 191, 36, 0.3);
+    /* GOLD GLOWING BORDER */
+    border: 1px solid var(--border);
     box-shadow: 
-        0 0 0 1px rgba(251, 191, 36, 0.1), /* Sharp inner gold line */
-        0 0 25px rgba(251, 191, 36, 0.15), /* Soft gold bloom */
-        0 25px 50px -12px rgba(0, 0, 0, 0.8); /* Deep shadow for float */
+        0 0 0 1px rgba(251, 191, 36, 0.1) inset, /* Inner sharp line */
+        0 0 30px rgba(251, 191, 36, 0.15), /* Outer bloom */
+        0 30px 60px -15px rgba(0, 0, 0, 0.9); /* Deep shadow */
         
-    animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     overflow: hidden;
+    animation: containerFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Subtle gold sheen moving across the container border */
-.container::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold-accent), transparent);
-    animation: scanline 4s linear infinite;
-}
-
-@keyframes scanline {
-    0% { transform: translateX(-100%); opacity: 0; }
-    50% { opacity: 1; }
-    100% { transform: translateX(100%); opacity: 0; }
-}
-
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(40px) scale(0.95); }
+@keyframes containerFadeIn {
+    from { opacity: 0; transform: translateY(40px) scale(0.96); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* TYPOGRAPHY */
+/* SLIDING HEADER ANIMATION */
 h1 {
     margin: 0;
-    /* Gold to White Gradient Text */
-    background: linear-gradient(to right, #fff 20%, var(--gold-accent) 100%);
+    background: linear-gradient(to right, #fff 30%, var(--gold-accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     font-size: 2.5rem;
     font-weight: 800;
     letter-spacing: -1px;
-    text-shadow: 0 0 30px rgba(251, 191, 36, 0.2);
+    
+    /* SLIDE IN FROM LEFT */
+    animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    animation-fill-mode: backwards;
 }
 
 .subtitle {
@@ -102,17 +89,48 @@ h1 {
     margin-bottom: 2.5rem;
     font-size: 1.1rem;
     font-weight: 300;
+    
+    /* SLIDE IN STAGGERED */
+    animation: slideInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+    animation-fill-mode: backwards;
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+/* GOLD LINING (Scanning Line under Header) */
+.subtitle::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-accent), transparent);
+    opacity: 0.5;
+    animation: scanline 3s linear infinite;
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-50px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scanline {
+    0% { transform: translateX(-100%); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateX(100%); opacity: 0; }
 }
 
 /* TABS */
 .tabs {
     display: flex;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.4);
     padding: 6px;
     border-radius: 16px;
     margin-bottom: 2.5rem;
     gap: 8px;
     border: 1px solid rgba(255,255,255,0.05);
+    animation: fadeIn 1s ease-out 0.3s backwards;
 }
 
 .tab-btn {
@@ -139,8 +157,8 @@ h1 {
     box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);
 }
 
-/* FORMS */
-.form-section { animation: fadeIn 0.5s ease-out; }
+/* INPUTS */
+.form-section { animation: fadeIn 0.5s ease-out 0.4s backwards; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .form-grid {
@@ -162,7 +180,6 @@ label {
     letter-spacing: 1px;
 }
 
-/* INPUTS WITH GOLD HOVER */
 input, select {
     width: 100%;
     padding: 1rem;
@@ -175,14 +192,15 @@ input, select {
     box-sizing: border-box;
 }
 
+/* Gold Hover Effect on Inputs */
 input:hover, select:hover {
-    border-color: var(--gold-accent); /* Gold border on hover */
+    border-color: var(--gold-accent);
     box-shadow: 0 0 10px rgba(251, 191, 36, 0.1);
 }
 
 input:focus, select:focus {
     outline: none;
-    border-color: var(--primary-blue); /* Blue focus for contrast */
+    border-color: var(--primary-blue);
     box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
     background: rgba(2, 6, 23, 0.8);
     transform: translateY(-2px);
@@ -231,6 +249,7 @@ button[type="submit"] {
     margin-top: 1.5rem;
     box-shadow: 0 10px 20px -5px rgba(245, 158, 11, 0.4);
     transition: all 0.3s ease;
+    animation: fadeIn 1s ease-out 0.6s backwards;
 }
 
 button[type="submit"]:hover {

@@ -10,10 +10,10 @@
 
 <div class="container">
     <h1>Breast Cancer Analysis</h1>
-    <p class="subtitle">Select your prediction mode below:</p>
+    <p class="subtitle">Quick Diagnostic Tool</p>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('combined')">Combined (Image + Data)</button>
+        <button class="tab-btn active" onclick="switchTab('combined')">Full Analysis</button>
         <button class="tab-btn" onclick="switchTab('clinical')">Clinical Data Only</button>
         <button class="tab-btn" onclick="switchTab('image')">Image Only</button>
     </div>
@@ -25,23 +25,56 @@
                 <label>Ultrasound Image</label>
                 <input type="file" id="imageInput" accept="image/png, image/jpeg">
                 <div class="preview-area" id="imagePreview">
-                    <span style="color: #9ca3af">No image selected</span>
+                    <span>No image selected</span>
                 </div>
             </div>
         </div>
 
         <div id="section-clinical" class="form-section">
+            <label>Patient Parameters</label>
+            
             <div class="input-group">
-                <label>Clinical Parameters</label>
-                
+                <label for="age">Age</label>
+                <input type="number" id="age" name="age" placeholder="e.g. 50">
+            </div>
+
+            <div class="form-grid">
                 <div class="input-group">
-                    <label for="case_id">Case ID</label>
-                    <input type="number" id="case_id" name="case_id" placeholder="e.g. 101">
+                    <label for="shape">Shape</label>
+                    <select id="shape">
+                        <option value="unknown">Unknown</option>
+                        <option value="oval">Oval</option>
+                        <option value="round">Round</option>
+                        <option value="irregular">Irregular</option>
+                    </select>
                 </div>
 
                 <div class="input-group">
-                    <label for="pixel_size">Pixel Size</label>
-                    <input type="number" id="pixel_size" name="pixel_size" step="0.0001" placeholder="e.g. 0.0078">
+                    <label for="margin">Margin</label>
+                    <select id="margin">
+                        <option value="unknown">Unknown</option>
+                        <option value="circumscribed">Circumscribed (Clean)</option>
+                        <option value="indistinct">Indistinct</option>
+                        <option value="spiculated">Spiculated</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="tissue">Tissue Type</label>
+                    <select id="tissue">
+                        <option value="unknown">Unknown</option>
+                        <option value="fat">Fatty</option>
+                        <option value="fibroglandular">Fibroglandular</option>
+                        <option value="heterogeneous">Heterogeneous</option>
+                    </select>
+                </div>
+                
+                 <div class="input-group">
+                    <label for="halo">Halo Present?</label>
+                    <select id="halo">
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                    </select>
                 </div>
             </div>
         </div>

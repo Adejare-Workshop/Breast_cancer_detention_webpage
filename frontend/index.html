@@ -3,44 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heart Disease Diagnostic Tool</title>
-    
+    <title>Breast Cancer Diagnostic Tool</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
-    <h1>Diagnostic Analysis</h1>
-    <p class="subtitle">Multimodal Heart Disease Prediction</p>
+    <h1>Breast Cancer Analysis</h1>
+    <p class="subtitle">Select your prediction mode below:</p>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('combined')">Combined (Image + Data)</button>
+        <button class="tab-btn" onclick="switchTab('clinical')">Clinical Data Only</button>
+        <button class="tab-btn" onclick="switchTab('image')">Image Only</button>
+    </div>
 
     <form id="diagnosticForm">
-        <div class="form-grid">
-            <div>
-                <div class="input-group">
-                    <label>Medical Imaging (Ultrasound/X-Ray)</label>
-                    <input type="file" id="imageInput" accept="image/png, image/jpeg" required>
-                    <div class="preview-area" id="imagePreview">
-                        <span style="color: #9ca3af">No image selected</span>
-                    </div>
+        
+        <div id="section-image" class="form-section">
+            <div class="input-group">
+                <label>Ultrasound Image</label>
+                <input type="file" id="imageInput" accept="image/png, image/jpeg">
+                <div class="preview-area" id="imagePreview">
+                    <span style="color: #9ca3af">No image selected</span>
                 </div>
             </div>
+        </div>
 
-            <div>
+        <div id="section-clinical" class="form-section">
+            <div class="input-group">
                 <label>Clinical Parameters</label>
                 
                 <div class="input-group">
-                    <label for="age">Age</label>
-                    <input type="number" id="age" name="age" placeholder="e.g. 45" required>
+                    <label for="case_id">Case ID</label>
+                    <input type="number" id="case_id" name="case_id" placeholder="e.g. 101">
                 </div>
 
                 <div class="input-group">
-                    <label for="tumor_size">Biomarker / Size (cm)</label>
-                    <input type="number" id="tumor_size" name="tumor_size" step="0.1" required>
-                </div>
-                
-                <div class="input-group">
-                    <label for="param3">Additional Parameter</label>
-                    <input type="number" id="param3" name="param3" step="0.1">
+                    <label for="pixel_size">Pixel Size</label>
+                    <input type="number" id="pixel_size" name="pixel_size" step="0.0001" placeholder="e.g. 0.0078">
                 </div>
             </div>
         </div>

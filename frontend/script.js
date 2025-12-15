@@ -138,10 +138,7 @@ if (form) {
         }
     });
 }
-// ✅ YOUR HUGGING FACE URL
-const API_URL = 'https://adejareworkstudio-heart-disease-backend.hf.space'; 
 
-// ... (Tabs and Preview logic same as before) ...
 
 // SUBMIT LOGIC
 const form = document.getElementById('diagnosticForm');

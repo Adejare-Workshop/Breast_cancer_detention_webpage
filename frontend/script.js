@@ -1,7 +1,7 @@
 // --- CONFIGURATION ---
 // Change this to your Render URL after deployment (e.g. 'https://my-app.onrender.com')
 // Keep as http://127.0.0.1:8000 for local testing
-const API_URL = 'http://127.0.0.1:8000'; 
+const API_URL = 'https://adejareworkstudio-heart-disease-backend.hf.space';
 // ---------------------
 
 // Image Preview Logic

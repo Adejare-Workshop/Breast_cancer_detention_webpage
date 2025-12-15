@@ -138,3 +138,67 @@ if (form) {
         }
     });
 }
+// ✅ YOUR HUGGING FACE URL
+const API_URL = 'https://adejareworkstudio-heart-disease-backend.hf.space'; 
+
+// ... (Tabs and Preview logic same as before) ...
+
+// SUBMIT LOGIC
+const form = document.getElementById('diagnosticForm');
+if (form) {
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const resultDiv = document.getElementById('result');
+        
+        btn.disabled = true;
+        btn.innerText = "Analyzing...";
+        resultDiv.style.display = 'none';
+
+        try {
+            const payload = new FormData();
+            
+            // Image
+            if (currentMode !== 'clinical') {
+                const img = document.getElementById('imageInput').files[0];
+                if (img) payload.append('image', img);
+            }
+            
+            // Clinical Text
+            if (currentMode !== 'image') {
+                const clinicalData = {
+                    'Age': document.getElementById('age').value || 53,
+                    'Shape': document.getElementById('shape').value,
+                    'Margin': document.getElementById('margin').value,
+                    'Tissue': document.getElementById('tissue').value,
+                    'Halo': document.getElementById('halo').value
+                };
+                payload.append('clinical_data', JSON.stringify(clinicalData));
+            }
+
+            const response = await fetch(`${API_URL}/predict`, {
+                method: 'POST', body: payload
+            });
+
+            if (!response.ok) throw new Error("Server Error");
+            const data = await response.json();
+
+            // Display
+            resultDiv.className = 'success';
+            resultDiv.innerHTML = `
+                <h3>${data.prediction}</h3>
+                <p>Confidence: ${(data.confidence * 100).toFixed(1)}%</p>
+                <div class="confidence-bar"><div class="fill" style="width:${data.confidence*100}%"></div></div>
+            `;
+            resultDiv.style.display = 'block';
+
+        } catch (error) {
+            resultDiv.className = 'error';
+            resultDiv.innerHTML = error.message;
+            resultDiv.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Generate Prediction";
+        }
+    });
+}

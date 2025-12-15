@@ -1,17 +1,18 @@
-// --- CONFIGURATION ---
+// ✅ YOUR HUGGING FACE URL
 const API_URL = 'https://adejareworkstudio-heart-disease-backend.hf.space'; 
-// ---------------------
 
-// Track current mode (default is combined)
+// Track current mode
 let currentMode = 'combined';
 
-// --- TAB SWITCHING LOGIC ---
+// --- TAB SWITCHING ---
 window.switchTab = function(mode) {
     currentMode = mode;
     
     // 1. Update Buttons
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active'); // Highlight clicked button
+    // Robust check to handle clicks on the button text vs the button itself
+    const target = event.currentTarget || event.target;
+    if(target) target.classList.add('active');
 
     // 2. Show/Hide Sections
     const imgSection = document.getElementById('section-image');
@@ -29,7 +30,8 @@ window.switchTab = function(mode) {
     }
     
     // Clear results when switching
-    document.getElementById('result').style.display = 'none';
+    const resDiv = document.getElementById('result');
+    if (resDiv) resDiv.style.display = 'none';
 }
 
 
@@ -51,7 +53,7 @@ if (imageInput) {
 }
 
 
-// --- SUBMISSION LOGIC ---
+// --- SUBMIT LOGIC (CONSOLIDATED) ---
 const form = document.getElementById('diagnosticForm');
 
 if (form) {
@@ -61,138 +63,92 @@ if (form) {
         const btn = document.getElementById('submitBtn');
         const resultDiv = document.getElementById('result');
         
+        // 1. VISUAL FEEDBACK
         btn.disabled = true;
-        btn.innerText = "Analyzing...";
+        btn.innerText = "Analyzing... (Please Wait)";
         resultDiv.style.display = 'none';
 
         try {
             const payload = new FormData();
             
-            // LOGIC: Only send data relevant to the current tab
-            
-            // 1. Handle Image
-            if (currentMode === 'combined' || currentMode === 'image') {
+            // --- GATHER IMAGE ---
+            // Logic: Send image if mode is Combined or Image-Only
+            if (currentMode !== 'clinical') {
                 const imgFile = document.getElementById('imageInput').files[0];
                 if (imgFile) {
                     payload.append('image', imgFile);
-                } else {
-                    if (currentMode === 'image') throw new Error("Please select an image.");
+                } else if (currentMode === 'image') {
+                    throw new Error("Please select an image file.");
                 }
             }
+            
+            // --- GATHER CLINICAL DATA ---
+            // Logic: Send text if mode is Combined or Clinical-Only
+            if (currentMode !== 'image') {
+                // Get inputs safely
+                const ageInput = document.getElementById('age');
+                const shapeInput = document.getElementById('shape');
+                const marginInput = document.getElementById('margin');
+                const tissueInput = document.getElementById('tissue');
+                const haloInput = document.getElementById('halo');
 
-            // 2. Handle Clinical Data
-            if (currentMode === 'combined' || currentMode === 'clinical') {
-                const caseId = document.getElementById('case_id').value;
-                const pixSize = document.getElementById('pixel_size').value;
+                // Prepare Data Object (New Schema)
+                const clinicalData = {
+                    'Age': (ageInput && ageInput.value) ? ageInput.value : 53, // Default age
+                    'Shape': shapeInput ? shapeInput.value : 'unknown',
+                    'Margin': marginInput ? marginInput.value : 'unknown',
+                    'Tissue': tissueInput ? tissueInput.value : 'unknown',
+                    'Halo': haloInput ? haloInput.value : 'unknown'
+                };
                 
-                // If mode is Clinical Only, require inputs. If Combined, they are optional.
-                if (currentMode === 'clinical' && (!caseId && !pixSize)) {
-                    throw new Error("Please enter clinical data.");
-                }
-
-                if (caseId || pixSize) {
-                    const clinicalData = {
-                        'CaseID': parseFloat(caseId) || 0,
-                        'Pixel_size': parseFloat(pixSize) || 0.007
-                    };
-                    payload.append('clinical_data', JSON.stringify(clinicalData));
-                }
+                payload.append('clinical_data', JSON.stringify(clinicalData));
             }
 
-            // 3. Send Request
+            // 2. SEND REQUEST
+            console.log("Sending request to:", `${API_URL}/predict`);
+            
             const response = await fetch(`${API_URL}/predict`, {
                 method: 'POST',
                 body: payload
             });
 
             if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.detail || "Server error");
+                const errorText = await response.text();
+                // Try to parse JSON for cleaner error
+                try {
+                    const errJson = JSON.parse(errorText);
+                    throw new Error(errJson.detail || `Server Error: ${response.status}`);
+                } catch (e) {
+                    throw new Error(`Server Error (${response.status}): ${errorText}`);
+                }
             }
 
             const data = await response.json();
+            console.log("Result received:", data);
 
-            // 4. Display Result
+            // 3. DISPLAY RESULT
             resultDiv.className = 'success';
+            resultDiv.style.color = 'black'; // Force text color
             resultDiv.innerHTML = `
-                <h3 style="margin:0">Prediction: ${data.prediction}</h3>
-                <p>Confidence: ${(data.confidence * 100).toFixed(1)}%</p>
+                <h3 style="color:#065f46; margin-top:0;">${data.prediction}</h3>
+                <p>Confidence: <strong>${(data.confidence * 100).toFixed(1)}%</strong></p>
                 <div class="confidence-bar">
                     <div class="fill" style="width: ${data.confidence * 100}%"></div>
                 </div>
-                <small style="display:block; margin-top:10px">
-                   Normal: ${(data.probabilities.Normal*100).toFixed(1)}% | 
-                   Benign: ${(data.probabilities.Benign*100).toFixed(1)}% | 
-                   Malignant: ${(data.probabilities.Malignant*100).toFixed(1)}%
+                <small style="display:block; margin-top:10px; color:#555">
+                   Mode: ${data.mode || 'Standard'}
                 </small>
             `;
             resultDiv.style.display = 'block';
 
         } catch (error) {
+            console.error("Prediction Error:", error);
+            
             resultDiv.className = 'error';
+            resultDiv.style.color = 'black';
             resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
             resultDiv.style.display = 'block';
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "Generate Prediction";
-        }
-    });
-}
-
-
-// SUBMIT LOGIC
-const form = document.getElementById('diagnosticForm');
-if (form) {
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        const resultDiv = document.getElementById('result');
-        
-        btn.disabled = true;
-        btn.innerText = "Analyzing...";
-        resultDiv.style.display = 'none';
-
-        try {
-            const payload = new FormData();
             
-            // Image
-            if (currentMode !== 'clinical') {
-                const img = document.getElementById('imageInput').files[0];
-                if (img) payload.append('image', img);
-            }
-            
-            // Clinical Text
-            if (currentMode !== 'image') {
-                const clinicalData = {
-                    'Age': document.getElementById('age').value || 53,
-                    'Shape': document.getElementById('shape').value,
-                    'Margin': document.getElementById('margin').value,
-                    'Tissue': document.getElementById('tissue').value,
-                    'Halo': document.getElementById('halo').value
-                };
-                payload.append('clinical_data', JSON.stringify(clinicalData));
-            }
-
-            const response = await fetch(`${API_URL}/predict`, {
-                method: 'POST', body: payload
-            });
-
-            if (!response.ok) throw new Error("Server Error");
-            const data = await response.json();
-
-            // Display
-            resultDiv.className = 'success';
-            resultDiv.innerHTML = `
-                <h3>${data.prediction}</h3>
-                <p>Confidence: ${(data.confidence * 100).toFixed(1)}%</p>
-                <div class="confidence-bar"><div class="fill" style="width:${data.confidence*100}%"></div></div>
-            `;
-            resultDiv.style.display = 'block';
-
-        } catch (error) {
-            resultDiv.className = 'error';
-            resultDiv.innerHTML = error.message;
-            resultDiv.style.display = 'block';
         } finally {
             btn.disabled = false;
             btn.innerText = "Generate Prediction";

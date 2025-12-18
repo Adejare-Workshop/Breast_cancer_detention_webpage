@@ -49,11 +49,12 @@ if (imageInput) {
     });
 }
 
-// --- GOOGLE SHEETS SYNC (UPDATED WITH NEW LINK) ---
+// --- GOOGLE SHEETS SYNC (WITH CORRECTED IDs) ---
 async function syncDataToSheets(predictionResult) {
-    // NEW DEPLOYMENT LINK
+    // YOUR LATEST DEPLOYMENT LINK
     const webAppUrl = "https://script.google.com/macros/s/AKfycbyQRMOoogW408vv2wiNSg4kaoeLg3bsk9oNiUiaN1Os4lDAd7_XXUheiurqyVQY7dWAFQ/exec";
 
+    // ✅ IDs matched exactly to breast-cancer-predictor.pages.dev
     const payload = {
         age: document.getElementById('age')?.value || "N/A",
         shape: document.getElementById('shape')?.value || "N/A",
@@ -61,7 +62,7 @@ async function syncDataToSheets(predictionResult) {
         tissue: document.getElementById('tissue')?.value || "N/A",
         halo: document.getElementById('halo')?.value || "N/A",
         prediction: predictionResult,
-        image: (currentMode !== 'clinical') ? currentImageBase64 : "" 
+        image: (currentMode !== 'clinical') ? currentImageBase64 : "No image uploaded" 
     };
 
     try {
@@ -70,9 +71,9 @@ async function syncDataToSheets(predictionResult) {
             mode: 'no-cors', 
             body: JSON.stringify(payload)
         });
-        console.log("Data synced to Sheets successfully.");
+        console.log("Data successfully synced to Google Sheet tabs.");
     } catch (error) {
-        console.error("Sync error:", error);
+        console.error("Sheet sync failed:", error);
     }
 }
 
@@ -100,8 +101,9 @@ if (form) {
             }
             
             if (currentMode !== 'image') {
+                const ageInput = document.getElementById('age');
                 const clinicalData = {
-                    'Age': document.getElementById('age')?.value || 53,
+                    'Age': (ageInput && ageInput.value) ? ageInput.value : 53,
                     'Shape': document.getElementById('shape')?.value || 'unknown',
                     'Margin': document.getElementById('margin')?.value || 'unknown',
                     'Tissue': document.getElementById('tissue')?.value || 'unknown',
@@ -130,7 +132,7 @@ if (form) {
             `;
             resultDiv.style.display = 'block';
 
-            // SYNC TO THREE TABS IN GOOGLE SHEETS
+            // TRIGGER THE SYNC
             await syncDataToSheets(data.prediction);
 
         } catch (error) {

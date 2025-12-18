@@ -9,12 +9,10 @@ let currentImageBase64 = ""; // Global variable for Google Sheets sync
 window.switchTab = function(mode) {
     currentMode = mode;
     
-    // 1. Update Buttons
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     const target = event.currentTarget || event.target;
     if(target) target.classList.add('active');
 
-    // 2. Show/Hide Sections
     const imgSection = document.getElementById('section-image');
     const clinSection = document.getElementById('section-clinical');
 
@@ -29,7 +27,6 @@ window.switchTab = function(mode) {
         clinSection.style.display = 'none';
     }
     
-    // Clear results when switching
     const resDiv = document.getElementById('result');
     if (resDiv) resDiv.style.display = 'none';
 }
@@ -44,7 +41,7 @@ if (imageInput) {
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                currentImageBase64 = e.target.result; // Capture for Sheets
+                currentImageBase64 = e.target.result; 
                 imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
             }
             reader.readAsDataURL(file);
@@ -52,12 +49,11 @@ if (imageInput) {
     });
 }
 
-// --- GOOGLE SHEETS SYNC ---
+// --- GOOGLE SHEETS SYNC (UPDATED WITH NEW LINK) ---
 async function syncDataToSheets(predictionResult) {
-    // UPDATED URL
-    const webAppUrl = "https://script.google.com/macros/s/AKfycbzxt0RJO-PB8gpKvUE9iB_-h87MIQUncoxaKbeQOHyBfBdpIN5luFtnTx-_m4qN1oRVEw/exec";
+    // NEW DEPLOYMENT LINK
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbyQRMOoogW408vv2wiNSg4kaoeLg3bsk9oNiUiaN1Os4lDAd7_XXUheiurqyVQY7dWAFQ/exec";
 
-    // Matching your input IDs exactly
     const payload = {
         age: document.getElementById('age')?.value || "N/A",
         shape: document.getElementById('shape')?.value || "N/A",
@@ -65,7 +61,7 @@ async function syncDataToSheets(predictionResult) {
         tissue: document.getElementById('tissue')?.value || "N/A",
         halo: document.getElementById('halo')?.value || "N/A",
         prediction: predictionResult,
-        image: (currentMode !== 'clinical') ? currentImageBase64 : "No image uploaded" 
+        image: (currentMode !== 'clinical') ? currentImageBase64 : "" 
     };
 
     try {
@@ -90,7 +86,6 @@ if (form) {
         const btn = document.getElementById('submitBtn');
         const resultDiv = document.getElementById('result');
         
-        // 1. VISUAL FEEDBACK
         btn.disabled = true;
         btn.innerText = "Analyzing... (Please Wait)";
         resultDiv.style.display = 'none';
@@ -98,21 +93,15 @@ if (form) {
         try {
             const payload = new FormData();
             
-            // --- GATHER IMAGE ---
             if (currentMode !== 'clinical') {
                 const imgFile = document.getElementById('imageInput').files[0];
-                if (imgFile) {
-                    payload.append('image', imgFile);
-                } else if (currentMode === 'image') {
-                    throw new Error("Please select an image file.");
-                }
+                if (imgFile) payload.append('image', imgFile);
+                else if (currentMode === 'image') throw new Error("Please select an image file.");
             }
             
-            // --- GATHER CLINICAL DATA ---
             if (currentMode !== 'image') {
-                const ageVal = document.getElementById('age')?.value;
                 const clinicalData = {
-                    'Age': ageVal ? ageVal : 53,
+                    'Age': document.getElementById('age')?.value || 53,
                     'Shape': document.getElementById('shape')?.value || 'unknown',
                     'Margin': document.getElementById('margin')?.value || 'unknown',
                     'Tissue': document.getElementById('tissue')?.value || 'unknown',
@@ -121,17 +110,15 @@ if (form) {
                 payload.append('clinical_data', JSON.stringify(clinicalData));
             }
 
-            // 2. SEND REQUEST TO HF
             const response = await fetch(`${API_URL}/predict`, {
                 method: 'POST',
                 body: payload
             });
 
             if (!response.ok) throw new Error(`Server Error: ${response.status}`);
-
             const data = await response.json();
 
-            // 3. DISPLAY RESULT
+            // DISPLAY RESULT
             resultDiv.className = 'success';
             resultDiv.style.color = 'black'; 
             resultDiv.innerHTML = `
@@ -143,14 +130,12 @@ if (form) {
             `;
             resultDiv.style.display = 'block';
 
-            // 4. SYNC TO GOOGLE SHEETS
-            // This now triggers after the prediction is visible
+            // SYNC TO THREE TABS IN GOOGLE SHEETS
             await syncDataToSheets(data.prediction);
 
         } catch (error) {
             console.error("Prediction Error:", error);
             resultDiv.className = 'error';
-            resultDiv.style.color = 'black';
             resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
             resultDiv.style.display = 'block';
         } finally {

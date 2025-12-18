@@ -155,29 +155,27 @@ if (form) {
         }
     });
 }
-async function sendToGoogleSheet(predictionResult) {
-    const scriptURL = "https://script.google.com/macros/s/AKfycbzxt0RJO-PB8gpKvUE9iB_-h87MIQUncoxaKbeQOHyBfBdpIN5luFtnTx-_m4qN1oRVEw/exec";
+async function syncDataToSheets(predictionResult) {
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbzxt0RJO-PB8gpKvUE9iB_-h87MIQUncoxaKbeQOHyBfBdpIN5luFtnTx-_m4qN1oRVEw/exec";
 
-    // Gather data from your specific UI elements
     const payload = {
-        age: document.getElementById('ageInput')?.value || "N/A",
-        shape: document.getElementById('lesionShape')?.value || "N/A",
-        margin: document.getElementById('marginType')?.value || "N/A",
-        tissue: document.getElementById('tissueComposition')?.value || "N/A",
-        halo: document.getElementById('haloPresent')?.value || "N/A",
-        prediction: predictionResult, // The result from your AI model
-        imageURL: window.lastUploadedImageBase64 || "" // Assuming you store the image preview
+        age: document.getElementById('ageInput').value,
+        shape: document.getElementById('lesionShape').value,
+        margin: document.getElementById('marginType').value,
+        tissue: document.getElementById('tissueComposition').value,
+        halo: document.getElementById('haloPresent').value,
+        prediction: predictionResult,
+        image: window.currentImageBase64 || "No image uploaded" 
     };
 
     try {
-        await fetch(scriptURL, {
+        await fetch(webAppUrl, {
             method: 'POST',
             mode: 'no-cors', 
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        console.log("Data synced to Sheets successfully");
+        console.log("Data successfully split across 3 sheets.");
     } catch (error) {
-        console.error("Sheet sync failed:", error);
+        console.error("Sync error:", error);
     }
 }

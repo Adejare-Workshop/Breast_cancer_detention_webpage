@@ -6,6 +6,17 @@
     <title>Breast Cancer Diagnostic Tool | Adejare Work Studio</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        .helper-text {
+            display: block;
+            font-size: 0.75rem;
+            color: #888; /* Adjust color to match your theme */
+            margin-top: 2px;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+    </style>
 </head>
 <body>
 
@@ -24,6 +35,7 @@
             <div id="section-image" class="form-section">
                 <div class="input-group">
                     <label>Ultrasound Scan</label>
+                    <small class="helper-text">Upload a clear, high-resolution breast ultrasound image.</small>
                     <input type="file" id="imageInput" accept="image/png, image/jpeg">
                     <div class="preview-area" id="imagePreview">
                         <span>Drop image here or click to upload</span>
@@ -36,12 +48,14 @@
                 
                 <div class="input-group">
                     <label for="age">Patient Age</label>
+                    <small class="helper-text">Enter the patient's current age in years.</small>
                     <input type="number" id="age" name="age" placeholder="e.g. 50">
                 </div>
 
                 <div class="form-grid">
                     <div class="input-group">
                         <label for="shape">Lesion Shape</label>
+                        <small class="helper-text">The overall geometric outline of the detected mass.</small>
                         <select id="shape">
                             <option value="unknown">Unknown</option>
                             <option value="oval">Oval</option>
@@ -52,6 +66,7 @@
 
                     <div class="input-group">
                         <label for="margin">Margin Type</label>
+                        <small class="helper-text">The border of the mass. 'Circumscribed' is clear, 'Spiculated' is star-like.</small>
                         <select id="margin">
                             <option value="unknown">Unknown</option>
                             <option value="circumscribed">Circumscribed (Clean)</option>
@@ -62,6 +77,7 @@
                     
                     <div class="input-group">
                         <label for="tissue">Tissue Composition</label>
+                        <small class="helper-text">The predominant background breast tissue seen in the scan.</small>
                         <select id="tissue">
                             <option value="unknown">Unknown</option>
                             <option value="fat">Fatty</option>
@@ -72,6 +88,7 @@
                     
                      <div class="input-group">
                         <label for="halo">Halo Present?</label>
+                        <small class="helper-text">Indicate if a thick, bright ring surrounds the lesion.</small>
                         <select id="halo">
                             <option value="no">No</option>
                             <option value="yes">Yes</option>

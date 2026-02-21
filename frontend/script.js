@@ -42,19 +42,17 @@ if (imageInput) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 currentImageBase64 = e.target.result; 
-                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width: 100%; border-radius: 8px;">`;
             }
             reader.readAsDataURL(file);
         }
     });
 }
 
-// --- GOOGLE SHEETS SYNC (WITH CORRECTED IDs) ---
+// --- GOOGLE SHEETS SYNC ---
 async function syncDataToSheets(predictionResult) {
-    // YOUR LATEST DEPLOYMENT LINK
     const webAppUrl = "https://script.google.com/macros/s/AKfycbyQRMOoogW408vv2wiNSg4kaoeLg3bsk9oNiUiaN1Os4lDAd7_XXUheiurqyVQY7dWAFQ/exec";
 
-    // ✅ IDs matched exactly to breast-cancer-predictor.pages.dev
     const payload = {
         age: document.getElementById('age')?.value || "N/A",
         shape: document.getElementById('shape')?.value || "N/A",
@@ -94,20 +92,22 @@ if (form) {
         try {
             const payload = new FormData();
             
+            // Append Image
             if (currentMode !== 'clinical') {
                 const imgFile = document.getElementById('imageInput').files[0];
                 if (imgFile) payload.append('image', imgFile);
                 else if (currentMode === 'image') throw new Error("Please select an image file.");
             }
             
+            // Append Clinical Data (Lowercase keys to match backend)
             if (currentMode !== 'image') {
                 const ageInput = document.getElementById('age');
                 const clinicalData = {
-                    'Age': (ageInput && ageInput.value) ? ageInput.value : 53,
-                    'Shape': document.getElementById('shape')?.value || 'unknown',
-                    'Margin': document.getElementById('margin')?.value || 'unknown',
-                    'Tissue': document.getElementById('tissue')?.value || 'unknown',
-                    'Halo': document.getElementById('halo')?.value || 'unknown'
+                    'age': (ageInput && ageInput.value) ? ageInput.value : 50,
+                    'shape': document.getElementById('shape')?.value || 'unknown',
+                    'margin': document.getElementById('margin')?.value || 'unknown',
+                    'tissue': document.getElementById('tissue')?.value || 'unknown',
+                    'halo': document.getElementById('halo')?.value || 'unknown'
                 };
                 payload.append('clinical_data', JSON.stringify(clinicalData));
             }
@@ -117,23 +117,54 @@ if (form) {
                 body: payload
             });
 
-            if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Server Error: ${response.status} - ${errText}`);
+            }
+            
             const data = await response.json();
+            console.log("Raw API Response:", data); // Helpful for debugging in F12
+
+            // --- EXTRACT DATA FROM NEW LATE FUSION STRUCTURE ---
+            // We safely check if the new backend structure exists
+            let finalPred = "Unknown";
+            let finalConf = 0.0;
+            let displayMode = "Unknown Mode";
+
+            if (data.final_diagnosis) {
+                finalPred = data.final_diagnosis.prediction;
+                finalConf = data.final_diagnosis.confidence;
+                displayMode = data.final_diagnosis.mode;
+            } else if (data.prediction) {
+                // Fallback just in case old backend is cached
+                finalPred = data.prediction;
+                finalConf = data.confidence;
+                displayMode = data.mode || "Single-Modality";
+            }
+
+            const confPercent = (finalConf * 100).toFixed(1);
+
+            // Determine color scheme
+            let textColor = "#065f46"; // Green for Benign/Normal
+            if (finalPred.toLowerCase() === "malignant") {
+                textColor = "#991b1b"; // Red for Malignant
+            }
 
             // DISPLAY RESULT
             resultDiv.className = 'success';
             resultDiv.style.color = 'black'; 
             resultDiv.innerHTML = `
-                <h3 style="color:#065f46; margin-top:0;">${data.prediction}</h3>
-                <p>Confidence: <strong>${(data.confidence * 100).toFixed(1)}%</strong></p>
-                <div class="confidence-bar">
-                    <div class="fill" style="width: ${data.confidence * 100}%"></div>
+                <h3 style="color:${textColor}; margin-top:0;">Diagnosis: ${finalPred}</h3>
+                <p>Confidence: <strong>${confPercent}%</strong></p>
+                <p style="font-size: 0.8em; color: #666; margin-bottom: 5px;">Analysis Mode: ${displayMode}</p>
+                <div class="confidence-bar" style="background-color: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden;">
+                    <div class="fill" style="width: ${confPercent}%; background-color: ${textColor}; height: 100%;"></div>
                 </div>
             `;
             resultDiv.style.display = 'block';
 
             // TRIGGER THE SYNC
-            await syncDataToSheets(data.prediction);
+            await syncDataToSheets(finalPred);
 
         } catch (error) {
             console.error("Prediction Error:", error);

@@ -1,0 +1,17 @@
+The Core 8  Clinical Features
+Age: This is the most basic demographic factor and is a primary risk indicator in every medical dataset.
+
+Lesion Shape: Describes the geometric outline of the mass (e.g., Round, Oval, Irregular).
+
+Margin Type: Describes the border of the mass; "Spiculated" or "Indistinct" margins are high-risk indicators compared to "Circumscribed" ones.
+
+Tissue Composition: The density/background of the breast tissue (e.g., Fatty, Fibroglandular, Dense), which affects how easily a mass can be seen.
+
+Echogenicity: Refers to how the mass reflects ultrasound waves (e.g., Hypoechoic, Isoechoic). This is a standard metric in almost all ultrasound-based clinical data.
+
+Posterior Acoustic Features: Describes what happens to the sound waves behind the mass (e.g., Shadowing or Enhancement). Shadowing is a classic sign often associated with malignancy.
+
+Orientation (Parallel vs. Non-Parallel): Often called "taller-than-wide." A mass that grows vertically (non-parallel to the skin) is a significant warning sign in clinical assessments.
+
+Classification and diagnosis 
+  
